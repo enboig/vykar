@@ -98,6 +98,32 @@ vykar break-lock
 vykar break-lock --sessions
 ```
 
+## Migrate a repository
+
+`vykar copy` copies snapshots from one configured repository into another.
+Chunk IDs are keyed per repository, so every chunk is read from the source,
+verified, and stored again under the destination's IDs. The destination can
+therefore differ in format, encryption mode, key or backend.
+
+This is how a repository created before 0.20 (format v2, BLAKE2b) is moved to
+the current format, which cannot be changed in place:
+
+1. Add the new repository to your config next to the old one, with the **same
+   `chunker` settings** so new backups deduplicate against the copied data.
+2. `vykar init -R new`
+3. `vykar copy --from old -R new` (`--dry-run` previews; snapshot names or
+   `-S <label>` copy a subset)
+4. `vykar check --verify-data -R new`
+5. Point your sources at the new repository, then delete the old one when you
+   no longer need it.
+
+Snapshots keep their names, IDs, times, host and source. A snapshot whose name
+already exists in the destination is skipped, so an interrupted copy resumes
+where it stopped. Both repositories stay registered as in use for the whole
+copy, so prune and compact wait until it finishes. The destination briefly
+holds a full copy of the data alongside the source, and every byte goes
+through the machine running the copy.
+
 ## Sharing one repository between hosts
 
 Several machines can back up to the same repository, but they should run

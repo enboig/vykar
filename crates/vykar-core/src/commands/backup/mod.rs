@@ -12,6 +12,7 @@ mod walk;
 pub(crate) mod read_source;
 
 pub(crate) use chunk_process::WorkerChunk;
+pub(crate) use phases::{phase2_commit, BackupSession};
 
 use std::sync::atomic::AtomicBool;
 use std::sync::Arc;

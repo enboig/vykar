@@ -7,6 +7,7 @@ mod chunker;
 mod coalesced_read;
 mod compact;
 mod conditional_index;
+mod copy;
 mod corruption;
 mod delete;
 mod delete_repo;

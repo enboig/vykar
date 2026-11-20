@@ -310,7 +310,7 @@ impl Default for EncryptionConfig {
 /// envelope).
 pub const CHUNK_MAX_SIZE_HARD_CAP: u32 = 16 * 1024 * 1024; // 16 MiB
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChunkerConfig {
     #[serde(default = "default_min_size")]
     pub min_size: u32,

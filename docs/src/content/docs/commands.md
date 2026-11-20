@@ -52,6 +52,7 @@ See [Maintain the Repository](/maintenance).
 | `vykar snapshot delete` | Delete one or more snapshots |
 | `vykar delete` | Delete an entire repository permanently |
 | `vykar break-lock` | Remove stale repository locks left by interrupted processes when lock conflicts block operations |
+| `vykar copy` | Copy snapshots from another configured repository (`--from`) into the one selected with `-R`; see [Migrate a repository](/maintenance#migrate-a-repository) |
 
 ## Common flags
 
@@ -68,6 +69,7 @@ With several repositories configured and no `-R`:
 - Commands that name one snapshot (`restore`, `snapshot list`, `snapshot info`, `snapshot diff`, `snapshot delete`) probe the repositories and run in the one that holds it. If several hold a snapshot of that name, the command stops and asks for `-R`.
 - `latest` is ambiguous across repositories and requires `-R`, as does deleting several snapshots in one command.
 - `key export` and `key import` require `-R`: a key belongs to exactly one repository.
+- `copy` requires `-R` for the destination and `--from` for the source.
 
 ## Exit codes
 

@@ -76,6 +76,41 @@ pub(crate) fn run_cli(cli: Cli) -> ExitCode {
         None => all_repos.iter().collect(),
     };
 
+    // `copy` spans two repositories, so it bypasses per-repo dispatch.
+    if let Some(Commands::Copy {
+        from,
+        source,
+        compression,
+        dry_run,
+        snapshots,
+        ..
+    }) = &cli.command
+    {
+        let Some(src) = config::select_repo(&all_repos, from) else {
+            eprintln!("Error: no repository matching '{from}'");
+            return ExitCode::from(EXIT_ERROR);
+        };
+        // clap requires -R for copy, so exactly one repository is selected.
+        let [dst] = repos.as_slice() else {
+            eprintln!("Error: copy requires -R / --repo to select the destination");
+            return ExitCode::from(EXIT_ERROR);
+        };
+        warn_if_untrusted_rest(&src.config, src.label.as_deref());
+        warn_if_untrusted_rest(&dst.config, dst.label.as_deref());
+        let result = cmd::copy::run_copy(
+            src,
+            dst,
+            cmd::copy::CopyRunOpts {
+                snapshots,
+                source_filter: source,
+                compression_override: compression.as_deref(),
+                dry_run: *dry_run,
+                shutdown: Some(&signal::SHUTDOWN),
+            },
+        );
+        return finish(result.map(|()| false));
+    }
+
     if let Some(code) = dispatch_targeted(&cli, &repos) {
         return code;
     }

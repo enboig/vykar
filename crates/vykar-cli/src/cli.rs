@@ -277,6 +277,39 @@ pub(crate) enum Commands {
         http_allow_public: bool,
     },
 
+    /// Copy snapshots from another repository into this one
+    ///
+    /// Every chunk is read from the source, verified, and stored under the
+    /// destination's chunk IDs, so the destination may use a different format,
+    /// encryption mode or key. This is how a repository is migrated to the
+    /// current format: `vykar init` a new one, then copy into it. Snapshots
+    /// whose name already exists in the destination are skipped, so an
+    /// interrupted copy resumes where it stopped.
+    Copy {
+        /// Destination repository (label or path); must already be initialized
+        #[arg(short = 'R', long = "repo", required = true)]
+        repo: Option<String>,
+
+        /// Source repository (label or path)
+        #[arg(long)]
+        from: String,
+
+        /// Copy only snapshots of these source labels
+        #[arg(short = 'S', long = "source")]
+        source: Vec<String>,
+
+        /// Compression for copied chunks (lz4, zstd, none; default: destination config)
+        #[arg(long)]
+        compression: Option<String>,
+
+        /// Only show what would be copied, don't actually copy
+        #[arg(short = 'n', long)]
+        dry_run: bool,
+
+        /// Snapshots to copy (names or "latest"; default: all)
+        snapshots: Vec<String>,
+    },
+
     /// Free repository space by compacting pack files
     Compact {
         /// Select repository by label or path
@@ -458,6 +491,7 @@ impl Commands {
             | Self::Info { repo, .. }
             | Self::Mount { repo, .. }
             | Self::BreakLock { repo, .. }
+            | Self::Copy { repo, .. }
             | Self::Compact { repo, .. } => repo.as_deref(),
             Self::Snapshot { command, .. } => command.repo(),
             Self::Key { command, .. } => command.repo(),
@@ -499,6 +533,7 @@ impl Commands {
             Self::Mount { .. } => "mount",
             Self::BreakLock { .. } => "break-lock",
             Self::Compact { .. } => "compact",
+            Self::Copy { .. } => "copy",
             Self::Snapshot { .. } => "snapshot",
             Self::Key { .. } => "key",
             Self::Config { .. } => "config",

@@ -28,7 +28,7 @@ use vykar_types::snapshot_id::SnapshotId;
 /// The backup's registered session. Owns the heartbeat guard until the
 /// commit point hands it to the cleanup thread; dropping this struct (or
 /// `end()`) runs the guard's Drop: stop-thread → join-thread → deregister.
-pub(super) struct BackupSession {
+pub(crate) struct BackupSession {
     id: String,
     guard: Option<lock::SessionGuard>,
 }
@@ -36,7 +36,7 @@ pub(super) struct BackupSession {
 impl BackupSession {
     /// Adopt the already-registered session `id` into a heartbeat guard.
     /// On failure the marker is deregistered before the error is returned.
-    pub(super) fn adopt(storage: &Arc<dyn StorageBackend>, id: String) -> Result<Self> {
+    pub(crate) fn adopt(storage: &Arc<dyn StorageBackend>, id: String) -> Result<Self> {
         match lock::SessionGuard::adopt(Arc::clone(storage), id.clone()) {
             Ok(g) => Ok(Self { id, guard: Some(g) }),
             Err(e) => {
@@ -443,7 +443,7 @@ pub(super) fn phase1_upload(
 /// Phase 2: take the commit lock, commit the snapshot, release the lock.
 /// Deregisters `session` on every path that reaches the commit (see the
 /// comments inline); a lock-acquisition failure leaves it to the caller.
-pub(super) fn phase2_commit(
+pub(crate) fn phase2_commit(
     repo: &mut Repository,
     session: &mut BackupSession,
     snapshot_entry: SnapshotEntry,

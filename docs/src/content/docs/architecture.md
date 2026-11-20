@@ -210,7 +210,7 @@ Future snapshot-level metadata goes inside the reserved opaque `ext` blob (parse
 | 2 | keyed BLAKE2b-256 | unkeyed BLAKE2b-256 | up to 0.19 |
 | 3 | keyed BLAKE3 | unkeyed BLAKE3 | 0.20 and later |
 
-A repository's version is fixed at `vykar init` and never changes. Changing the chunk-ID hash changes the dedup identity of every chunk, and changing the pack-ID hash changes every storage key, so there is no in-place upgrade — a v2 repository stays v2 for life and remains fully readable *and writable*. `vykar info` reports both the format and the hash.
+A repository's version is fixed at `vykar init` and never changes. Changing the chunk-ID hash changes the dedup identity of every chunk, and changing the pack-ID hash changes every storage key, so there is no in-place upgrade — a v2 repository stays v2 for life and remains fully readable *and writable*. Migration is a copy: `vykar copy` re-hashes every chunk into a freshly initialized repository (see [Migrate a repository](/maintenance#migrate-a-repository)). `vykar info` reports both the format and the hash.
 
 There is deliberately **no user-facing choice**: no `--hash` flag, no YAML key. `init` always creates the current format. Two accepted consequences: older binaries cannot open a repository created by 0.20+ (`unsupported repository version: 3`), so a fleet sharing a new repository must upgrade together; and a self-hosted `vykar-server` must be upgraded before a new repository can be created against it (a pre-flight `/health` probe at `init` makes that fail cleanly rather than at the first backup).
 

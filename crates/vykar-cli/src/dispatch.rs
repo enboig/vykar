@@ -329,6 +329,9 @@ pub(crate) fn dispatch_command(
         Commands::Config { .. } => Err(CliError::from(
             "'config' command should be handled before config resolution",
         )),
+        Commands::Copy { .. } => Err(CliError::from(
+            "'copy' command should be handled before per-repo dispatch",
+        )),
         Commands::Daemon { .. } => Err(CliError::from(
             "'daemon' command should be handled before per-repo dispatch",
         )),

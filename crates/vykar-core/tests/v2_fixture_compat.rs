@@ -501,3 +501,77 @@ fn v2_fixture_file_caches_are_dropped() {
         );
     }
 }
+
+// ── Migration ──────────────────────────────────────────────────────────────
+
+/// `vykar copy` is the migration path off format v2: every snapshot copied
+/// into a freshly initialized repository lands in the current format, with
+/// BLAKE3 chunk and pack IDs, and restores byte-identical.
+#[test]
+fn v2_fixtures_migrate_to_current_format_by_copy() {
+    for mode in MODES {
+        let fx = extract(mode);
+        let src_config = fx.config();
+
+        let mut dst_config = make_test_config(&fx.root.join("migrated"));
+        dst_config.cache_dir = src_config.cache_dir.clone();
+        dst_config.encryption.mode = src_config.encryption.mode;
+        commands::init::run(&dst_config, fx.passphrase()).unwrap();
+
+        let outcome = commands::copy::run(
+            &src_config,
+            fx.passphrase(),
+            &dst_config,
+            fx.passphrase(),
+            &commands::copy::CopyRequest {
+                snapshots: &[],
+                source_labels: &[],
+                compression: vykar_core::compress::Compression::Lz4,
+                dry_run: false,
+            },
+            None,
+            None,
+        )
+        .unwrap();
+        let copied: Vec<String> = outcome.copied.into_iter().map(|c| c.name).collect();
+        assert_eq!(copied, fx.snapshots, "{mode}: every snapshot, oldest first");
+
+        let storage =
+            Box::new(LocalBackend::new(fx.root.join("migrated").to_str().unwrap()).unwrap());
+        let migrated = Repository::open(
+            storage,
+            fx.passphrase(),
+            Some(fx.cache_dir()),
+            OpenOptions::new(),
+        )
+        .unwrap();
+        assert_eq!(migrated.config.version, 3, "{mode}");
+        assert_eq!(migrated.content_hash(), HashAlgorithm::Blake3, "{mode}");
+        common::assert_pack_names(&fx.root.join("migrated"), HashAlgorithm::Blake3);
+
+        let dest = fx.root.join("restore-migrated");
+        commands::restore::run(
+            &dst_config,
+            fx.passphrase(),
+            fx.latest_snapshot(),
+            dest.to_str().unwrap(),
+            None,
+            dst_config.xattrs.enabled,
+            true,
+            None,
+        )
+        .unwrap();
+        assert_eq!(
+            read_tree(&dest),
+            read_tree(&fx.source_dir()),
+            "{mode}: migrated snapshot restores a different tree"
+        );
+
+        let check = commands::check::run(&dst_config, fx.passphrase(), true, false).unwrap();
+        assert!(
+            check.errors.is_empty(),
+            "{mode}: check --verify-data on the migrated repository reported {:?}",
+            check.errors
+        );
+    }
+}
